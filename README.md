@@ -5,7 +5,9 @@ Acceleration codes for the Ozaki-scheme on integer matrix multiplication units.
 ## Important Notice
 
 To use these codes, [ozIMMU](https://github.com/enp1s0/ozIMMU) is required.
+
 Therefore, users must agree to the license terms of ozIMMU in addition to the license for these codes.
+
 **When citing these codes, please also include a citation for ozIMMU.**
 
 ## Usage
