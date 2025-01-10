@@ -23,6 +23,18 @@ Complex matrix multiplication is not provided.
 ## Citation
 
 ```
+@article{doi:10.1177/10943420241313064,
+      author = {Yuki Uchino and Katsuhisa Ozaki and Toshiyuki Imamura},
+      title ={Performance enhancement of the Ozaki Scheme on integer matrix multiplication unit},
+      journal = {The International Journal of High Performance Computing Applications},
+      volume = {0},
+      number = {0},
+      pages = {10943420241313064},
+      year = {0},
+      doi = {10.1177/10943420241313064},
+      URL = {https://doi.org/10.1177/10943420241313064},
+}
+
 @misc{uchino2024performanceenhancementozakischeme,
       title={Performance Enhancement of the Ozaki Scheme on Integer Matrix Multiplication Unit},
       author={Yuki Uchino and Katsuhisa Ozaki and Toshiyuki Imamura},
