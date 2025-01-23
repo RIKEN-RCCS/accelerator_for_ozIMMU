@@ -14,9 +14,9 @@ Therefore, users must agree to the license terms of ozIMMU in addition to the li
 
 Compile [ozIMMU](https://github.com/enp1s0/ozIMMU) with our files instead of the same name files in `src` of the original ozIMMU.
 
-- Codes in `src_errfree_sum` reduce the accumuration in FP64 in ozIMMU.
-- Codes in `src_nearest_split` offer an alternative splitting method and produce more accurate result than ozIMMU when the numbers of slices are the same.
-- Codes in `src_nearest_split+errfree_sum` provides the hyblid method of the above and produce more accurate result faster than ozIMMU.
+- Codes in `src_errfree_sum` (ozIMMU_EF) reduce the accumuration in FP64 in ozIMMU.
+- Codes in `src_nearest_split` (ozIMMU_RN) offer an alternative splitting method and produce more accurate results than ozIMMU when the numbers of slices are the same.
+- Codes in `src_nearest_split+errfree_sum` (ozIMMU_H) provides the hyblid method of the above and produce more accurate results faster than ozIMMU.
 
 Complex matrix multiplication is not provided.
 
