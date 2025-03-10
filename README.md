@@ -30,7 +30,7 @@ Complex matrix multiplication is not provided.
       volume = {0},
       number = {0},
       pages = {10943420241313064},
-      year = {0},
+      year = {2025},
       doi = {10.1177/10943420241313064},
       URL = {https://doi.org/10.1177/10943420241313064},
 }
