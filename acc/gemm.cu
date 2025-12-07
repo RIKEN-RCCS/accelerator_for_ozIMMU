@@ -272,7 +272,7 @@ void matmul_core(
     const std::size_t n, const std::size_t k, const void *const a_ptr,
     const std::size_t lda, const mtk::ozimmu::data_t type_a,
     const void *const b_ptr, const std::size_t ldb,
-    const mtk::ozimmu::data_t type_b, const int beta_i, void *const c_ptr,
+    const mtk::ozimmu::data_t type_b, void *const c_ptr,
     const mtk::ozimmu::detail::gemm_pair_config_t &gemm_pair_config,
     const mtk::ozimmu::compute_mode_t compute_mode,
     const void *const a_working_memory_ptr, const std::size_t ld_w_a,
@@ -316,7 +316,7 @@ void matmul_core(
     handle->profiler.start_timer_sync(profile_label);
     switch (gemm_mode) {
     case mtk::ozimmu::detail::int8tc: {
-        const int alpha_i = 1;
+        const int alpha_i = 1, beta_i = 0;
         const auto op_A_r =
             gemm_pair_config.A_id == 0 ? to_cublasOperation_t(op_A) : CUBLAS_OP_T;
         const auto op_B_r =
@@ -352,9 +352,6 @@ int gemm_int8(mtk::ozimmu::handle_t handle, const mtk::ozimmu::operation_t op_A,
               const std::size_t ldb, const T *beta, T *const c_ptr,
               std::size_t ldc, const mtk::ozimmu::compute_mode_t compute_mode);
 
-//=====
-// This function is changed
-//=====
 template <>
 int gemm_int8<double>(mtk::ozimmu::handle_t handle,
                       const mtk::ozimmu::operation_t op_A,
@@ -396,71 +393,25 @@ int gemm_int8<double>(mtk::ozimmu::handle_t handle,
                           a_int8_slices_ptr, ld_int8_a, b_ptr, ldb, b_max_exp_ptr,
                           b_int8_slices_ptr, ld_int8_b, num_split, bits_per_int8);
 
-    int nextpow2_k = __builtin_ctz(uint32_t(k));
-    nextpow2_k     = ((1 << nextpow2_k) == int(k)) ? nextpow2_k : (nextpow2_k + 1);
-    int lim_accum  = 31 - bits_per_int8 - bits_per_int8 - nextpow2_k;
-    int beta_i     = 0;
-    int p          = -1;
-
     const auto &gemm_pair_config_list =
         mtk::ozimmu::detail::get_split_config(compute_mode).gemm_pair_config_list;
-
-    if (lim_accum == 0) {
-
-        //=====
-        // Group-wise error-free summation cannot be applied
-        //=====
-        for (const auto &gemm_pair_config : gemm_pair_config_list) {
-            matmul_core(handle, op_A, op_B, m, n,
-                        ld_int8_a, // use ld_int8_a instead of k for better stability
-                        a_ptr, lda, mtk::ozimmu::fp64, b_ptr, ldb, mtk::ozimmu::fp64,
-                        beta_i, c_i32_ptr, gemm_pair_config, compute_mode, a_int8_slices_ptr,
-                        ld_int8_a, b_int8_slices_ptr, ld_int8_b);
-            handle->profiler.start_timer_sync("accumulate_in_f64");
-            accumulate_in_f64(
-                c_f64_ptr, c_i32_ptr, m * n,
-                bits_per_int8 * (gemm_pair_config.A_id + gemm_pair_config.B_id - 2) -
-                    (7 /*bitlen(int8)-1*/ - bits_per_int8) *
-                        2, // The `(7 - bits_per_int8) * 2` term is required because the
-                           // mantissa `bits_per_int8` bits are stored in the low
-                           // `bits_per_int8` bits of an int8.
-                handle->cuda_stream);
-            handle->profiler.stop_timer_sync("accumulate_in_f64");
-        }
-
-    } else {
-
-        //=====
-        // Group-wise error-free summation
-        //=====
-        lim_accum = 1 << lim_accum;
-        for (const auto &gemm_pair_config : gemm_pair_config_list) {
-            if (gemm_pair_config.A_id == 1) p++;
-            if ((gemm_pair_config.A_id - 1) % lim_accum == 0) beta_i = 0;
-
-            matmul_core(handle, op_A, op_B, m, n,
-                        ld_int8_a, // use ld_int8_a instead of k for better stability
-                        a_ptr, lda, mtk::ozimmu::fp64, b_ptr, ldb, mtk::ozimmu::fp64,
-                        beta_i, c_i32_ptr, gemm_pair_config, compute_mode, a_int8_slices_ptr,
-                        ld_int8_a, b_int8_slices_ptr, ld_int8_b);
-
-            beta_i = 1;
-            if ((gemm_pair_config.A_id - 1) == p || ((gemm_pair_config.A_id % lim_accum == 0) && gemm_pair_config.A_id > 1)) {
-
-                handle->profiler.start_timer_sync("accumulate_in_f64");
-                accumulate_in_f64(
-                    c_f64_ptr, c_i32_ptr, m * n,
-                    bits_per_int8 * (gemm_pair_config.A_id + gemm_pair_config.B_id - 2) -
-                        (7 /*bitlen(int8)-1*/ - bits_per_int8) *
-                            2, // The `(7 - bits_per_int8) * 2` term is required because the
-                               // mantissa `bits_per_int8` bits are stored in the low
-                               // `bits_per_int8` bits of an int8.
-                    handle->cuda_stream);
-                handle->profiler.stop_timer_sync("accumulate_in_f64");
-            }
-        }
+    for (const auto &gemm_pair_config : gemm_pair_config_list) {
+        matmul_core(handle, op_A, op_B, m, n,
+                    ld_int8_a, // use ld_int8_a instead of k for better stability
+                    a_ptr, lda, mtk::ozimmu::fp64, b_ptr, ldb, mtk::ozimmu::fp64,
+                    c_i32_ptr, gemm_pair_config, compute_mode, a_int8_slices_ptr,
+                    ld_int8_a, b_int8_slices_ptr, ld_int8_b);
+        handle->profiler.start_timer_sync("accumulate_in_f64");
+        accumulate_in_f64(
+            c_f64_ptr, c_i32_ptr, m * n,
+            bits_per_int8 * (gemm_pair_config.A_id + gemm_pair_config.B_id - 2) -
+                (7 /*bitlen(int8)-1*/ - bits_per_int8) *
+                    2, // The `(7 - bits_per_int8) * 2` term is required because the
+                       // mantissa `bits_per_int8` bits are stored in the low
+                       // `bits_per_int8` bits of an int8.
+            handle->cuda_stream);
+        handle->profiler.stop_timer_sync("accumulate_in_f64");
     }
-
     handle->profiler.start_timer_sync("copy_result");
     axby(m, n, *alpha, c_f64_ptr, *beta, c_ptr, ldc, a_max_exp_ptr, b_max_exp_ptr,
          handle->cuda_stream);
@@ -547,7 +498,7 @@ int gemm_int8<cuDoubleComplex>(
             matmul_core(handle, mtk::ozimmu::op_t, mtk::ozimmu::op_n, m, n,
                         ld_int8_a, // use ld_int8_a instead of k for better stability
                         a_ptr, lda, mtk::ozimmu::fp64, b_ptr, ldb, mtk::ozimmu::fp64,
-                        0, c_i32_ptr, gemm_pair_config, compute_mode,
+                        c_i32_ptr, gemm_pair_config, compute_mode,
                         a_int8_working_memory_ptr_list[p.first], ld_int8_a,
                         b_int8_working_memory_ptr_list[p.second], ld_int8_b);
             handle->profiler.start_timer_sync("accumulate_in_f64");
