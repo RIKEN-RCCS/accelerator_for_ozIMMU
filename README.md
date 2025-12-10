@@ -1,22 +1,23 @@
 # Accelerator for ozIMMU
 
-Acceleration codes for the Ozaki-scheme on integer matrix multiplication units.
+This repository provides patch files that enhance the performance of the Ozaki scheme implementation in the original [ozIMMU](https://github.com/enp1s0/ozIMMU).
+By replacing the files in the `src` directory of ozIMMU with the corresponding files from this repository, the enhanced functionality becomes available.
 
 ## Important Notice
 
-To use these codes, [ozIMMU](https://github.com/enp1s0/ozIMMU) is required.
+Using the codes in this repository requires the original ozIMMU.
+Users must accept the license terms of ozIMMU in addition to the license of this repository.
 
-Therefore, users must agree to the license terms of ozIMMU in addition to the license for these codes.
-
-**When citing these codes, please also include a citation for ozIMMU.**
+When citing this repository, please also cite ozIMMU.
 
 ## Usage
 
-Compile [ozIMMU](https://github.com/enp1s0/ozIMMU) with our files instead of the same name files in `src` of the original ozIMMU.
+Replace the original source files in `src` of ozIMMU with the files provided in this repository, then compile ozIMMU as usual.
 
-- Codes in `src_errfree_sum` (ozIMMU_EF) reduce the accumuration in FP64 in ozIMMU.
-- Codes in `src_nearest_split` (ozIMMU_RN) offer an alternative splitting method and produce more accurate results than ozIMMU when the numbers of slices are the same.
-- Codes in `src_nearest_split+errfree_sum` (ozIMMU_H) provides the hyblid method of the above and produce more accurate results faster than ozIMMU.
+- Files in `src_errfree_sum` (ozIMMU_EF) reduce FP64 accumulation overhead in ozIMMU.
+- Files in `src_nearest_split` (ozIMMU_RN) introduce an alternative splitting method that yields higher accuracy under the same number of slices.
+- Files in `src_nearest_split+errfree_sum` (ozIMMU_H) combine both techniques to deliver higher accuracy and improved performance compared with the original ozIMMU.
+- File in `acc` apply n-blocking to the INT8 GEMM calls in the original ozIMMU. This optimization prevents the performance degradation observed in INT8 GEMM for large matrices, improving scalability without altering ozIMMU's algorithmic structure.
 
 Complex matrix multiplication is not provided.
 
